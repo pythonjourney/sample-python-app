@@ -7,7 +7,7 @@ permissions:
 
 jobs:
  Build:
-  runs-on: ubuntu-linux
+  runs-on: ubuntu-latest
 
   steps:
    - name: checkout repository
