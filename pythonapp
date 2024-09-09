@@ -1,0 +1,36 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Deploy to EC2
+      run: |
+        aws ssm send-command \
+          --instance-ids "i-1234567890abcdef0" \
+          --document-name "AWS-RunShellScript" \
+          --parameters commands=[
+            "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <your-account-id>.dkr.ecr.us-east-1.amazonaws.com",
+            "docker pull <your-account-id>.dkr.ecr.us-east-1.amazonaws.com/your-repo:latest",
+            "docker stop your-container-name || true",
+            "docker rm your-container-name || true",
+            "docker run -d --name your-container-name -p 80:80 <your-account-id>.dkr.ecr.us-east-1.amazonaws.com/your-repo:latest"
+          ]
